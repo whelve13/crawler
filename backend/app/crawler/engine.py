@@ -73,7 +73,7 @@ class CrawlerEngine:
             try:
                 # Use a small timeout so the worker checks the stop_event and shutdown conditions frequently
                 url, depth, is_external = await asyncio.wait_for(self.queue.get(), timeout=0.5)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # If queue is empty and no active tasks are fetching, we are completely done
                 if self.active_tasks == 0 and self.queue.empty():
                     break

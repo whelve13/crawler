@@ -1,5 +1,5 @@
-import pytest
 from app.crawler.url import is_safe_url
+
 
 def test_ssrf_protection():
     assert not is_safe_url("http://localhost:8000")

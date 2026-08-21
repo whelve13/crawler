@@ -5,8 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.rate_limit import limiter
 from app.core.concurrency import concurrency_manager
+from app.core.rate_limit import limiter
 from app.db.session import AsyncSessionLocal
 from app.models.page import Page
 from app.models.task import CrawlTask

@@ -9,6 +9,7 @@ def is_http_or_https(url: str) -> bool:
 import ipaddress
 import socket
 
+
 def is_valid_url(url: str) -> bool:
     """Basic validation to ensure URL has a scheme and network location."""
     parsed = urlparse(url)

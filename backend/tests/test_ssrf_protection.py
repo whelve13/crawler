@@ -1,5 +1,5 @@
-import pytest
 from app.crawler.url import is_safe_url
+
 
 def test_is_safe_url_public():
     assert is_safe_url("https://example.com") is True

@@ -1,6 +1,7 @@
 import threading
 from contextlib import contextmanager
 
+
 class CrawlConcurrencyManager:
     def __init__(self, max_concurrent: int):
         self.max_concurrent = max_concurrent

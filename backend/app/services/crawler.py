@@ -1,12 +1,12 @@
 import logging
 import uuid
 
+from app.core.concurrency import concurrency_manager
 from app.crawler.engine import CrawlerEngine
 from app.db.session import AsyncSessionLocal
 from app.models.issue import HealthIssue, SEOIssue
 from app.models.page import Page
 from app.models.task import CrawlTask
-from app.core.concurrency import concurrency_manager
 
 logger = logging.getLogger(__name__)
 
@@ -100,5 +100,5 @@ async def run_crawl_task(
                     if task:
                         task.status = "failed"
                         await session.commit()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Failed to update task {task_id} status to failed: {e}")

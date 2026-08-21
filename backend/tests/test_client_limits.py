@@ -1,8 +1,9 @@
-import pytest
-import httpx
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, patch
 
-from app.crawler.client import AsyncCrawlerClient, FetchResult
+import pytest
+
+from app.crawler.client import AsyncCrawlerClient
+
 
 @pytest.mark.asyncio
 async def test_oversized_response_terminated():

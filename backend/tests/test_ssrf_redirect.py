@@ -1,7 +1,9 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
+
 from app.crawler.engine import CrawlerEngine
-from app.schemas.report import CrawlReportSchema
-from unittest.mock import patch, AsyncMock
+
 
 @pytest.mark.asyncio
 async def test_redirect_ssrf_protection():
@@ -25,7 +27,7 @@ async def test_redirect_ssrf_protection():
     with patch.object(engine.client, 'fetch', new_callable=AsyncMock) as mock:
         mock.side_effect = mock_fetch
         
-        report = await engine.run()
+        await engine.run()
         
         # Ensure only the public URL was fetched
         mock.assert_called_once_with("https://example.com")
