@@ -12,7 +12,7 @@ function App() {
             <Route path="/report/:taskId" element={<CrawlReportPage />} />
           </Routes>
         </div>
-      </BrowserRouter>
+      </HashRouter>
     </div>
   );
 }
