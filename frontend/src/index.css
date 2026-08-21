@@ -1,7 +1,105 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-body {
-  background-color: #f3f4f6; /* gray-100 */
+@theme {
+  --color-white: #111111;
+  --color-black: #e5e7eb;
+  --color-gray-50: #000000;
+  --color-gray-100: #111111;
+  --color-gray-200: #333333;
+  --color-gray-300: #444444;
+  --color-gray-400: #666666;
+  --color-gray-500: #888888;
+  --color-gray-600: #999999;
+  --color-gray-700: #cccccc;
+  --color-gray-800: #e5e7eb;
+  --color-gray-900: #ffffff;
+  --color-blue-50: #111111;
+  --color-blue-100: #222222;
+  --color-blue-500: #ffffff;
+  --color-blue-600: #e5e7eb;
+  --color-blue-700: #cccccc;
+  --color-blue-800: #888888;
+  --color-red-50: #220000;
+  --color-red-100: #440000;
+  --color-red-200: #660000;
+  --color-red-300: #880000;
+  --color-red-400: #aa0000;
+  --color-red-500: #cc0000;
+  --color-red-600: #ee0000;
+  --color-red-700: #ff3333;
+  --color-red-800: #ff6666;
+  --color-green-50: #002200;
+  --color-green-100: #004400;
+  --color-green-200: #006600;
+  --color-green-300: #008800;
+  --color-green-400: #00aa00;
+  --color-green-500: #00cc00;
+  --color-green-600: #00ee00;
+  --color-green-700: #33ff33;
+  --color-green-800: #66ff66;
+  --color-yellow-50: #222200;
+  --color-yellow-100: #444400;
+  --color-yellow-200: #666600;
+  --color-yellow-300: #888800;
+  --color-yellow-400: #aaaa00;
+  --color-yellow-500: #cccc00;
+  --color-yellow-600: #eeee00;
+  --color-yellow-700: #ffff33;
+  --color-yellow-800: #ffff66;
+  --color-indigo-50: #111122;
+  --color-indigo-100: #222244;
+  --color-indigo-500: #6666ff;
+  --color-indigo-600: #8888ff;
+  --color-indigo-700: #aaaaff;
+  --font-sans: "Fira Code", "Courier New", Courier, monospace;
+  --font-mono: "Fira Code", "Courier New", Courier, monospace;
+}
+
+@layer base {
+  body {
+    background-color: #050505;
+    color: #e5e7eb;
+    font-family: "Fira Code", "Courier New", Courier, monospace;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+}
+
+/* Retro CRT Glow and Scanlines */
+body::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.25) 50%
+  );
+  background-size: 100% 4px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Custom scrollbar for retro feel */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background-color: #050505;
+  border-left: 1px solid #333333;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #444444;
+  border: 1px solid #050505;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #666666;
 }
