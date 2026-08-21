@@ -5,3 +5,4 @@ import { afterEach } from 'vitest';
 afterEach(() => {
   cleanup();
 });
+vi.mock('react-force-graph-2d', () => ({ default: vi.fn(() => null) }));

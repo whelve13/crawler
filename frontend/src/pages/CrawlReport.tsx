@@ -4,13 +4,19 @@ import { ArrowLeft, AlertCircle, Clock, Globe, FileWarning, Search, Link as Link
 import { fetchCrawlReport } from '../services/api';
 import { CrawlReport, PageReport, SEOIssue } from '../types/api';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import SiteGraph from '../components/SiteGraph';
+
 
 export default function CrawlReportPage() {
-  const { taskId } = useParams();
+  const { taskId } = useParams<{ taskId: string }>();
   const [report, setReport] = useState<CrawlReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // View state
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedPageUrl, setSelectedPageUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'metrics' | 'graph'>('metrics');
   const [pageFilter, setPageFilter] = useState<string>('All');
 
   useEffect(() => {
@@ -108,11 +114,48 @@ export default function CrawlReportPage() {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* 2. HTTP Status Distribution */}
-        <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 col-span-1 lg:col-span-1">
-          <h2 className="text-lg font-semibold mb-6 flex items-center"><BarChart3 className="w-5 h-5 mr-2 text-gray-400" /> Status Distribution</h2>
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('metrics')}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'metrics'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Metrics & Pages
+          </button>
+          <button
+            onClick={() => setActiveTab('graph')}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center ${
+              activeTab === 'graph'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Site Architecture
+            <span className="ml-2 bg-blue-100 text-blue-600 py-0.5 px-2 rounded-full text-xs font-semibold">New</span>
+          </button>
+        </nav>
+      </div>
+
+      {activeTab === 'graph' ? (
+        <section className="animate-in fade-in duration-300">
+          <SiteGraph 
+            pages={report.pages} 
+            startUrl={report.start_url} 
+            onNodeClick={(url) => setSelectedPageUrl(url)} 
+          />
+        </section>
+      ) : (
+        <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* 2. HTTP Status Distribution */}
+            <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 col-span-1 lg:col-span-1">
+              <h2 className="text-lg font-semibold mb-6 flex items-center"><BarChart3 className="w-5 h-5 mr-2 text-gray-400" /> Status Distribution</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -312,6 +355,8 @@ export default function CrawlReportPage() {
           </table>
         </div>
       </section>
+      </div>
+      )}
 
       {/* 7. Page Details Modal/Panel */}
       {selectedPage && (
