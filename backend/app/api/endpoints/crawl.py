@@ -51,6 +51,22 @@ async def start_crawl(
     
     return CrawlResponse(task_id=task.id, status=task.status)
 
+@router.get("/", response_model=list[CrawlTaskStatusResponse])
+async def get_recent_tasks(limit: int = 10, db: AsyncSession = Depends(get_db)):
+    stmt = select(CrawlTask).order_by(CrawlTask.created_at.desc()).limit(limit)
+    result = await db.execute(stmt)
+    tasks = result.scalars().all()
+    return [
+        CrawlTaskStatusResponse(
+            task_id=task.id,
+            status=task.status,
+            pages_crawled=task.pages_crawled,
+            pages_failed=task.pages_failed,
+            duration_seconds=task.duration_seconds
+        )
+        for task in tasks
+    ]
+
 @router.get("/{task_id}", response_model=CrawlTaskStatusResponse)
 async def get_crawl_status(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     task = await db.get(CrawlTask, task_id)
