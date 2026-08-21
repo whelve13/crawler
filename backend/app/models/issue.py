@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 
 class SEOIssue(Base):
+    __tablename__ = "seo_issue"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     page_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("page.id", ondelete="CASCADE"), index=True)
     
