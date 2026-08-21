@@ -4,7 +4,28 @@ A production-quality asynchronous website crawler and SEO auditing platform.
 
 ## Architecture
 
-This project consists of a FastAPI backend and a React frontend, backed by PostgreSQL. The crawler is built using `asyncio` and `httpx` for high performance, controlled concurrency, and robust error handling.
+This project consists of a FastAPI backend and a React frontend, backed by PostgreSQL. 
+
+### Deployment Architecture
+- **Frontend**: The static React application is deployed on **GitHub Pages**.
+- **Backend API**: The FastAPI application is deployed separately on a cloud provider (e.g. Render, Railway, AWS).
+- **Database**: The PostgreSQL database must be accessible to the backend API.
+
+```text
+GitHub Pages
+     │
+     │ HTTPS
+     ▼
+Backend API
+     │
+     ▼
+PostgreSQL
+```
+
+**Security & Configuration Details**:
+- GitHub Pages hosts only the static frontend bundle.
+- The `VITE_API_BASE` environment variable injected during the frontend build process points to the public Backend API URL.
+- All application secrets (database credentials, private tokens) reside entirely backend-side and are NEVER exposed to the frontend.
 
 ## Tech Stack
 

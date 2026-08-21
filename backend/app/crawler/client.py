@@ -61,7 +61,7 @@ class AsyncCrawlerClient:
         while retries <= max_retries:
             start_time = time.monotonic()
             try:
-                MAX_BYTES = 5 * 1024 * 1024  # 5MB limit
+                MAX_BYTES = settings.MAX_FILE_SIZE_BYTES  # Use limits from settings
                 
                 async with self.client.stream("GET", url) as response:
                     response_time = time.monotonic() - start_time
