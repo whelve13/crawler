@@ -19,23 +19,23 @@ async def run_crawl_task(
     """
     Background job to execute the crawl engine and persist the results.
     """
-    # 1. Update status to running
-    async with AsyncSessionLocal() as session:
-        task = await session.get(CrawlTask, task_id)
-        if not task:
-            logger.error(f"Task {task_id} not found to start.")
-            return
-        task.status = "running"
-        await session.commit()
-
-    engine = CrawlerEngine(
-        start_url=start_url,
-        max_pages=max_pages,
-        max_depth=max_depth,
-        check_external_links=check_external_links,
-    )
-
     try:
+        # 1. Update status to running
+        async with AsyncSessionLocal() as session:
+            task = await session.get(CrawlTask, task_id)
+            if not task:
+                logger.error(f"Task {task_id} not found to start.")
+                return
+            task.status = "running"
+            await session.commit()
+
+        engine = CrawlerEngine(
+            start_url=start_url,
+            max_pages=max_pages,
+            max_depth=max_depth,
+            check_external_links=check_external_links,
+        )
+
         # 2. Run crawler
         report = await engine.run()
 
@@ -92,8 +92,11 @@ async def run_crawl_task(
 
     except Exception:
         logger.exception(f"Task {task_id} failed with exception")
-        async with AsyncSessionLocal() as session:
-            task = await session.get(CrawlTask, task_id)
-            if task:
-                task.status = "failed"
-                await session.commit()
+        try:
+            async with AsyncSessionLocal() as session:
+                task = await session.get(CrawlTask, task_id)
+                if task:
+                    task.status = "failed"
+                    await session.commit()
+        except Exception as e:
+            logger.error(f"Failed to update task {task_id} status to failed: {e}")

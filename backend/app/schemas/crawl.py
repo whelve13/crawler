@@ -1,12 +1,12 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl, Field
 
 
 class CrawlRequest(BaseModel):
-    start_url: str
-    max_pages: int = 50
-    max_depth: int = 3
+    start_url: HttpUrl
+    max_pages: int = Field(default=50, ge=1, le=1000)
+    max_depth: int = Field(default=3, ge=1, le=10)
     check_external_links: bool = False
 
 class CrawlResponse(BaseModel):

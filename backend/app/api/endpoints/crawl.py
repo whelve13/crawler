@@ -32,7 +32,7 @@ async def start_crawl(
 ):
     # Create task in DB
     task = CrawlTask(
-        start_url=request.start_url,
+        start_url=str(request.start_url),
         status="pending"
     )
     db.add(task)
@@ -43,7 +43,7 @@ async def start_crawl(
     background_tasks.add_task(
         run_crawl_task,
         task_id=task.id,
-        start_url=request.start_url,
+        start_url=str(request.start_url),
         max_pages=request.max_pages,
         max_depth=request.max_depth,
         check_external_links=request.check_external_links
