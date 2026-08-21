@@ -29,8 +29,8 @@ async def get_db():
 @router.post("/", response_model=CrawlResponse)
 @limiter.limit("5/minute")
 async def start_crawl(
-    request_obj: Request,
-    request: CrawlRequest,
+    request: Request,
+    payload: CrawlRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
@@ -38,7 +38,7 @@ async def start_crawl(
         raise HTTPException(status_code=503, detail="Server is currently at maximum crawl capacity. Please try again later.")
     # Create task in DB
     task = CrawlTask(
-        start_url=str(request.start_url),
+        start_url=str(payload.start_url),
         status="pending"
     )
     db.add(task)
@@ -49,10 +49,10 @@ async def start_crawl(
     background_tasks.add_task(
         run_crawl_task,
         task_id=task.id,
-        start_url=str(request.start_url),
-        max_pages=request.max_pages,
-        max_depth=request.max_depth,
-        check_external_links=request.check_external_links
+        start_url=str(payload.start_url),
+        max_pages=payload.max_pages,
+        max_depth=payload.max_depth,
+        check_external_links=payload.check_external_links
     )
     
     return CrawlResponse(task_id=task.id, status=task.status)
