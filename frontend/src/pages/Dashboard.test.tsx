@@ -23,7 +23,7 @@ describe('Dashboard component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Website Auditor')).toBeInTheDocument();
+    expect(screen.getByText('Crawler')).toBeInTheDocument();
     
     await waitFor(() => {
       expect(screen.getByText('No tasks found. Start a crawl above.')).toBeInTheDocument();
