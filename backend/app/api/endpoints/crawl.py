@@ -1,10 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.rate_limit import limiter
+from app.core.concurrency import concurrency_manager
 from app.db.session import AsyncSessionLocal
 from app.models.page import Page
 from app.models.task import CrawlTask
@@ -25,11 +27,15 @@ async def get_db():
         yield session
 
 @router.post("/", response_model=CrawlResponse)
+@limiter.limit("5/minute")
 async def start_crawl(
+    request_obj: Request,
     request: CrawlRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
+    if not concurrency_manager.can_start():
+        raise HTTPException(status_code=503, detail="Server is currently at maximum crawl capacity. Please try again later.")
     # Create task in DB
     task = CrawlTask(
         start_url=str(request.start_url),
@@ -52,7 +58,8 @@ async def start_crawl(
     return CrawlResponse(task_id=task.id, status=task.status)
 
 @router.get("/", response_model=list[CrawlTaskStatusResponse])
-async def get_recent_tasks(limit: int = 10, db: AsyncSession = Depends(get_db)):
+@limiter.limit("30/minute")
+async def get_recent_tasks(request: Request, limit: int = 10, db: AsyncSession = Depends(get_db)):
     stmt = select(CrawlTask).order_by(CrawlTask.created_at.desc()).limit(limit)
     result = await db.execute(stmt)
     tasks = result.scalars().all()
@@ -68,7 +75,8 @@ async def get_recent_tasks(limit: int = 10, db: AsyncSession = Depends(get_db)):
     ]
 
 @router.get("/{task_id}", response_model=CrawlTaskStatusResponse)
-async def get_crawl_status(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+@limiter.limit("60/minute")
+async def get_crawl_status(request: Request, task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     task = await db.get(CrawlTask, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -82,7 +90,8 @@ async def get_crawl_status(task_id: uuid.UUID, db: AsyncSession = Depends(get_db
     )
 
 @router.get("/{task_id}/report", response_model=CrawlReportSchema)
-async def get_crawl_report(task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+@limiter.limit("30/minute")
+async def get_crawl_report(request: Request, task_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     # Eagerly load all relationships
     stmt = select(CrawlTask).where(CrawlTask.id == task_id).options(
         selectinload(CrawlTask.pages).selectinload(Page.seo_issues),

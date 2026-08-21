@@ -5,8 +5,8 @@ from pydantic import BaseModel, HttpUrl, Field
 
 class CrawlRequest(BaseModel):
     start_url: HttpUrl
-    max_pages: int = Field(default=50, ge=1, le=1000)
-    max_depth: int = Field(default=3, ge=1, le=10)
+    max_pages: int = Field(default=50, ge=1, le=500)
+    max_depth: int = Field(default=3, ge=1, le=5)
     check_external_links: bool = False
 
 class CrawlResponse(BaseModel):
