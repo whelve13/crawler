@@ -60,3 +60,10 @@ coverage.xml
 
 # Docker
 .docker/
+
+# Database
+*.sqlite3
+*.db
+postgres_data/
+data/
+
