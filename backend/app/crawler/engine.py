@@ -3,6 +3,7 @@ import time
 from dataclasses import dataclass, field
 
 from app.core.config import settings
+from app.crawler.audit import SEOAuditEngine
 from app.crawler.client import AsyncCrawlerClient
 from app.crawler.health import LinkHealthAnalyzer
 from app.crawler.parser import HTMLParser
@@ -12,6 +13,13 @@ from app.crawler.url import (
     is_valid_url,
     normalize_url,
     resolve_url,
+)
+from app.schemas.report import (
+    CrawlReportSchema,
+    CrawlStatsSchema,
+    HealthIssueSchema,
+    PageReportSchema,
+    SEOIssueSchema,
 )
 
 
@@ -52,6 +60,8 @@ class CrawlerEngine:
         self.client = AsyncCrawlerClient(max_connections=max_concurrency)
         self.stats = CrawlStats()
         self.health_analyzer = LinkHealthAnalyzer()
+        self.audit_engine = SEOAuditEngine()
+        self.pages_data: dict[str, PageReportSchema] = {}
 
         self.queue: asyncio.Queue[tuple[str, int, bool]] = asyncio.Queue()
         self.active_tasks = 0
@@ -102,6 +112,39 @@ class CrawlerEngine:
                     if result.html_content and depth < self.max_depth:
                         parsed = HTMLParser(result.html_content, url).parse()
                         
+                        # Run SEO audit
+                        audit_issues = self.audit_engine.run_audit(url, parsed)
+                        seo_issues_schemas = [
+                            SEOIssueSchema(
+                                rule_id=i.rule_id,
+                                severity=i.severity,
+                                message=i.message,
+                                element=i.element,
+                            )
+                            for i in audit_issues
+                        ]
+                        
+                        # Build internal links list for the report
+                        internal_links = [
+                            link.href for link in parsed.links if is_same_domain(self.start_url, link.href)
+                        ]
+                        
+                        # Store page data
+                        self.pages_data[url] = PageReportSchema(
+                            url=url,
+                            status_code=result.status_code,
+                            title=parsed.title,
+                            meta_description=parsed.meta_description,
+                            canonical_url=parsed.canonical_url,
+                            language=parsed.language,
+                            robots_meta=parsed.robots_meta,
+                            h1_tags=parsed.h1_tags,
+                            h2_tags=parsed.h2_tags,
+                            h3_tags=parsed.h3_tags,
+                            internal_links=internal_links,
+                            seo_issues=seo_issues_schemas,
+                        )
+                        
                         # Record links for health analysis
                         self.health_analyzer.record_links(url, {link.href for link in parsed.links})
                         
@@ -132,7 +175,7 @@ class CrawlerEngine:
                 self.queue.task_done()
                 self.active_tasks -= 1
 
-    async def run(self) -> CrawlStats:
+    async def run(self) -> CrawlReportSchema:
         """
         Start the crawl engine and block until finished.
         """
@@ -147,4 +190,30 @@ class CrawlerEngine:
 
         self.stats.end_time = time.monotonic()
         await self.client.close()
-        return self.stats
+        
+        # Build health issues schema
+        health_issues_raw = self.health_analyzer.analyze()
+        health_issues = [
+            HealthIssueSchema(
+                url=h.url,
+                issue_type=h.issue_type,
+                description=h.description,
+            )
+            for h in health_issues_raw
+        ]
+        
+        # Build final report
+        stats_schema = CrawlStatsSchema(
+            pages_crawled=self.stats.pages_crawled,
+            pages_failed=self.stats.pages_failed,
+            duration_seconds=self.stats.duration,
+        )
+        
+        report = CrawlReportSchema(
+            start_url=self.start_url,
+            stats=stats_schema,
+            pages=list(self.pages_data.values()),
+            health_issues=health_issues,
+        )
+        
+        return report

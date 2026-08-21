@@ -47,7 +47,7 @@ def mock_client():
 @pytest.mark.asyncio
 async def test_crawler_engine_basic(mock_client):
     engine = CrawlerEngine(start_url="https://example.com", max_pages=10)
-    stats = await engine.run()
+    report = await engine.run()
     
     # Expected visited URLs:
     # 1. https://example.com (crawled, valid)
@@ -55,9 +55,9 @@ async def test_crawler_engine_basic(mock_client):
     # 3. https://example.com/page2 (failed)
     # External link should be ignored.
     
-    assert stats.pages_crawled == 2
-    assert stats.pages_failed == 1
-    assert stats.duration > 0
+    assert report.stats.pages_crawled == 2
+    assert report.stats.pages_failed == 1
+    assert report.stats.duration_seconds > 0
     assert engine.tracker.is_visited("https://example.com")
     assert engine.tracker.is_visited("https://example.com/page1")
     assert engine.tracker.is_visited("https://example.com/page2")
@@ -67,17 +67,17 @@ async def test_crawler_engine_basic(mock_client):
 @pytest.mark.asyncio
 async def test_crawler_engine_max_pages(mock_client):
     engine = CrawlerEngine(start_url="https://example.com", max_pages=2)
-    stats = await engine.run()
+    report = await engine.run()
     
     # Should stop after processing exactly 2 pages
-    total_processed = stats.pages_crawled + stats.pages_failed
+    total_processed = report.stats.pages_crawled + report.stats.pages_failed
     assert total_processed == 2
 
 
 @pytest.mark.asyncio
 async def test_crawler_engine_redirect(mock_client):
     engine = CrawlerEngine(start_url="https://example.com/redirect", max_pages=10)
-    stats = await engine.run()
+    report = await engine.run()
     
     # 1. /redirect (failed, because it's a 301, which has result.error_type if not 2xx. Wait, 301 has status_code=301 < 400. So it counts as crawled)
     # 2. /page1 (crawled)
@@ -86,8 +86,8 @@ async def test_crawler_engine_redirect(mock_client):
     # Let's verify how 301 is handled. In client, < 500 returns early, so error_type is None.
     # In engine, status_code < 400 means crawled.
     # So /redirect is crawled, /page1 is crawled, /page2 is failed.
-    assert stats.pages_crawled == 2
-    assert stats.pages_failed == 1
+    assert report.stats.pages_crawled == 2
+    assert report.stats.pages_failed == 1
     assert engine.tracker.is_visited("https://example.com/redirect")
     assert engine.tracker.is_visited("https://example.com/page1")
     assert engine.tracker.is_visited("https://example.com/page2")
@@ -96,10 +96,10 @@ async def test_crawler_engine_redirect(mock_client):
 @pytest.mark.asyncio
 async def test_crawler_engine_max_depth(mock_client):
     engine = CrawlerEngine(start_url="https://example.com", max_pages=10, max_depth=0)
-    stats = await engine.run()
+    report = await engine.run()
     
     # With max_depth=0, it should only crawl the start URL and not queue any extracted links
-    assert stats.pages_crawled == 1
-    assert stats.pages_failed == 0
+    assert report.stats.pages_crawled == 1
+    assert report.stats.pages_failed == 0
     assert engine.tracker.is_visited("https://example.com")
     assert not engine.tracker.is_visited("https://example.com/page1")
