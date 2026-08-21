@@ -9,9 +9,8 @@ from app.crawler.health import LinkHealthAnalyzer
 from app.crawler.parser import HTMLParser
 from app.crawler.url import (
     URLTracker,
-    is_same_domain,
-    is_valid_url,
     is_safe_url,
+    is_same_domain,
     normalize_url,
     resolve_url,
 )
@@ -74,7 +73,7 @@ class CrawlerEngine:
             try:
                 # Use a small timeout so the worker checks the stop_event and shutdown conditions frequently
                 url, depth, is_external = await asyncio.wait_for(self.queue.get(), timeout=0.5)
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 # If queue is empty and no active tasks are fetching, we are completely done
                 if self.active_tasks == 0 and self.queue.empty():
                     break
@@ -199,10 +198,28 @@ class CrawlerEngine:
         self.tracker.mark_visited(self.start_url)
         await self.queue.put((self.start_url, 0, False))
 
-        workers = [asyncio.create_task(self._worker()) for _ in range(self.max_concurrency)]
+        # Start workers
+        workers = [
+            asyncio.create_task(self._worker())
+            for _ in range(self.max_concurrency)
+        ]
 
-        # Wait for all workers to complete
-        await asyncio.gather(*workers)
+        # Wait until the queue is fully processed or we hit limits
+        join_task = asyncio.create_task(self.queue.join())
+        stop_task = asyncio.create_task(self._stop_event.wait())
+        
+        await asyncio.wait(
+            [join_task, stop_task],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        
+        # Signal workers to stop
+        self._stop_event.set()
+        if not join_task.done():
+            join_task.cancel()
+
+        # Wait for workers to finish
+        await asyncio.gather(*workers, return_exceptions=True)
 
         self.stats.end_time = time.monotonic()
         await self.client.close()
