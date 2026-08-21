@@ -42,3 +42,7 @@ testpaths = ["tests"]
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
 
+
+[tool.ruff.lint]
+extend-ignore = ['B008']
+
