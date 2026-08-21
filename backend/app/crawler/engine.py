@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from app.core.config import settings
 from app.crawler.client import AsyncCrawlerClient
+from app.crawler.health import LinkHealthAnalyzer
 from app.crawler.parser import HTMLParser
 from app.crawler.url import (
     URLTracker,
@@ -39,17 +40,20 @@ class CrawlerEngine:
         max_pages: int = 50,
         max_depth: int = 3,
         max_concurrency: int = settings.MAX_CONCURRENCY,
+        check_external_links: bool = False,
     ):
         self.start_url = normalize_url(start_url)
         self.max_pages = max_pages
         self.max_depth = max_depth
         self.max_concurrency = max_concurrency
+        self.check_external_links = check_external_links
 
         self.tracker = URLTracker()
         self.client = AsyncCrawlerClient(max_connections=max_concurrency)
         self.stats = CrawlStats()
+        self.health_analyzer = LinkHealthAnalyzer()
 
-        self.queue: asyncio.Queue[tuple[str, int]] = asyncio.Queue()
+        self.queue: asyncio.Queue[tuple[str, int, bool]] = asyncio.Queue()
         self.active_tasks = 0
         self._stop_event = asyncio.Event()
         self._processed_count = 0
@@ -58,7 +62,7 @@ class CrawlerEngine:
         while not self._stop_event.is_set():
             try:
                 # Use a small timeout so the worker checks the stop_event and shutdown conditions frequently
-                url, depth = await asyncio.wait_for(self.queue.get(), timeout=0.5)
+                url, depth, is_external = await asyncio.wait_for(self.queue.get(), timeout=0.5)
             except TimeoutError:
                 # If queue is empty and no active tasks are fetching, we are completely done
                 if self.active_tasks == 0 and self.queue.empty():
@@ -77,30 +81,50 @@ class CrawlerEngine:
 
                 self._processed_count += 1
                 result = await self.client.fetch(url)
+                
+                self.health_analyzer.record_visit(
+                    url=url,
+                    status_code=result.status_code,
+                    error_type=result.error_type,
+                    redirect_target=result.redirect_url
+                )
 
                 if result.error_type or (result.status_code and result.status_code >= 400):
                     self.stats.pages_failed += 1
                 else:
                     self.stats.pages_crawled += 1
 
+                    # Skip parsing for external links
+                    if is_external:
+                        continue
+
                     # Discover new links using the dedicated parser
                     if result.html_content and depth < self.max_depth:
                         parsed = HTMLParser(result.html_content, url).parse()
+                        
+                        # Record links for health analysis
+                        self.health_analyzer.record_links(url, {link.href for link in parsed.links})
+                        
                         for link_info in parsed.links:
-                            if is_same_domain(self.start_url, link_info.href) and not self.tracker.is_visited(link_info.href):
+                            if is_same_domain(self.start_url, link_info.href):
+                                if not self.tracker.is_visited(link_info.href):
                                     self.tracker.mark_visited(link_info.href)
-                                    await self.queue.put((link_info.href, depth + 1))
+                                    await self.queue.put((link_info.href, depth + 1, False))
+                            elif self.check_external_links and not self.tracker.is_visited(link_info.href):
+                                self.tracker.mark_visited(link_info.href)
+                                # External links don't increase depth and won't be parsed
+                                await self.queue.put((link_info.href, depth, True))
 
-                    # Follow internal redirects
+                    # Follow internal redirects (or external if tracking them)
                     if result.redirect_url:
                         resolved_redirect = resolve_url(url, result.redirect_url)
-                        if (
-                            is_valid_url(resolved_redirect)
-                            and is_same_domain(self.start_url, resolved_redirect)
-                            and not self.tracker.is_visited(resolved_redirect)
-                        ):
-                            self.tracker.mark_visited(resolved_redirect)
-                            await self.queue.put((resolved_redirect, depth))
+                        if is_valid_url(resolved_redirect) and not self.tracker.is_visited(resolved_redirect):
+                            if is_same_domain(self.start_url, resolved_redirect):
+                                self.tracker.mark_visited(resolved_redirect)
+                                await self.queue.put((resolved_redirect, depth, False))
+                            elif self.check_external_links:
+                                self.tracker.mark_visited(resolved_redirect)
+                                await self.queue.put((resolved_redirect, depth, True))
             except Exception:  # noqa: BLE001
                 # Fail-safe to ensure crawler doesn't completely crash on unexpected worker errors
                 self.stats.pages_failed += 1
@@ -114,7 +138,7 @@ class CrawlerEngine:
         """
         self.stats.start_time = time.monotonic()
         self.tracker.mark_visited(self.start_url)
-        await self.queue.put((self.start_url, 0))
+        await self.queue.put((self.start_url, 0, False))
 
         workers = [asyncio.create_task(self._worker()) for _ in range(self.max_concurrency)]
 
