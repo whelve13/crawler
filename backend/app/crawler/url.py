@@ -6,10 +6,46 @@ def is_http_or_https(url: str) -> bool:
     parsed = urlparse(url)
     return parsed.scheme in ("http", "https")
 
+import ipaddress
+import socket
+
 def is_valid_url(url: str) -> bool:
     """Basic validation to ensure URL has a scheme and network location."""
     parsed = urlparse(url)
     return bool(parsed.scheme and parsed.netloc) and is_http_or_https(url)
+
+def is_safe_url(url: str) -> bool:
+    """
+    SSRF Protection: Validates that the URL does not resolve to an internal,
+    private, or loopback IP address (e.g. localhost, 127.0.0.1, 169.254.x.x, 10.x.x.x).
+    """
+    if not is_valid_url(url):
+        return False
+        
+    hostname = urlparse(url).hostname
+    if not hostname:
+        return False
+        
+    # Block explicit internal hostnames
+    if hostname in ("localhost", "host.docker.internal"):
+        return False
+        
+    try:
+        # Resolve to IP
+        # In a fully strict async architecture, this should use an async resolver or HTTPX hooks,
+        # but socket.gethostbyname provides a minimum safe foundation against simple SSRF.
+        ip_str = socket.gethostbyname(hostname)
+        ip_obj = ipaddress.ip_address(ip_str)
+        
+        # Block private, loopback, link-local, multicast, etc.
+        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast:
+            return False
+            
+    except socket.gaierror:
+        # If DNS fails to resolve, we consider it unsafe/unreachable
+        return False
+        
+    return True
 
 def normalize_url(url: str) -> str:
     """

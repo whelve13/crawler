@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Website Auditor"
     API_V1_STR: str = "/api/v1"
+    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:8000"]
 
     # PostgreSQL
     POSTGRES_SERVER: str = "localhost"

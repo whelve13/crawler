@@ -61,30 +61,38 @@ class AsyncCrawlerClient:
         while retries <= max_retries:
             start_time = time.monotonic()
             try:
-                response = await self.client.get(url)
-                response_time = time.monotonic() - start_time
-
-                result = FetchResult(
-                    url=url,
-                    status_code=response.status_code,
-                    response_time=response_time,
-                )
-
-                # Handle Redirects
-                if response.status_code in (301, 302, 303, 307, 308):
-                    result.redirect_url = response.headers.get("Location")
-
-                # Parse body only for successful HTML responses to save memory
-                content_type = response.headers.get("Content-Type", "")
-                if response.status_code == 200 and "text/html" in content_type.lower():
-                    result.html_content = response.text
-
+                MAX_BYTES = 5 * 1024 * 1024  # 5MB limit
+                
+                async with self.client.stream("GET", url) as response:
+                    response_time = time.monotonic() - start_time
+                    result = FetchResult(
+                        url=url,
+                        status_code=response.status_code,
+                        response_time=response_time,
+                    )
+                    
+                    # Handle Redirects
+                    if response.status_code in (301, 302, 303, 307, 308):
+                        result.redirect_url = response.headers.get("Location")
+                        
+                    # Parse body only for successful HTML responses to save memory
+                    content_type = response.headers.get("Content-Type", "")
+                    if response.status_code == 200 and "text/html" in content_type.lower():
+                        content_chunks = []
+                        total_bytes = 0
+                        async for chunk in response.aiter_bytes():
+                            content_chunks.append(chunk)
+                            total_bytes += len(chunk)
+                            if total_bytes > MAX_BYTES:
+                                break
+                        result.html_content = b"".join(content_chunks).decode("utf-8", errors="ignore")
+                        
                 # Return on successful fetch or client errors (no retry for 4xx)
-                if response.status_code < 500:
+                if result.status_code < 500:
                     return result
 
                 # 5xx errors fall through to retry
-                result.error_type = f"HTTP_{response.status_code}"
+                result.error_type = f"HTTP_{result.status_code}"
                 last_result = result
                 
             except httpx.TimeoutException:

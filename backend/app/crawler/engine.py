@@ -11,6 +11,7 @@ from app.crawler.url import (
     URLTracker,
     is_same_domain,
     is_valid_url,
+    is_safe_url,
     normalize_url,
     resolve_url,
 )
@@ -149,6 +150,9 @@ class CrawlerEngine:
                         self.health_analyzer.record_links(url, {link.href for link in parsed.links})
                         
                         for link_info in parsed.links:
+                            if not is_safe_url(link_info.href):
+                                continue
+                                
                             if is_same_domain(self.start_url, link_info.href):
                                 if not self.tracker.is_visited(link_info.href):
                                     self.tracker.mark_visited(link_info.href)
@@ -161,7 +165,7 @@ class CrawlerEngine:
                     # Follow internal redirects (or external if tracking them)
                     if result.redirect_url:
                         resolved_redirect = resolve_url(url, result.redirect_url)
-                        if is_valid_url(resolved_redirect) and not self.tracker.is_visited(resolved_redirect):
+                        if is_safe_url(resolved_redirect) and not self.tracker.is_visited(resolved_redirect):
                             if is_same_domain(self.start_url, resolved_redirect):
                                 self.tracker.mark_visited(resolved_redirect)
                                 await self.queue.put((resolved_redirect, depth, False))
@@ -180,6 +184,18 @@ class CrawlerEngine:
         Start the crawl engine and block until finished.
         """
         self.stats.start_time = time.monotonic()
+        
+        # SSRF Protection on start URL
+        if not is_safe_url(self.start_url):
+            self.stats.end_time = time.monotonic()
+            # Return early if start_url is unsafe
+            return CrawlReportSchema(
+                start_url=self.start_url,
+                stats=CrawlStatsSchema(pages_crawled=0, pages_failed=1, duration_seconds=0.0),
+                pages=[],
+                health_issues=[]
+            )
+            
         self.tracker.mark_visited(self.start_url)
         await self.queue.put((self.start_url, 0, False))
 

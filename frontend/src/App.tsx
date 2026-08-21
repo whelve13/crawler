@@ -17,36 +17,55 @@ function App() {
   const [maxPages, setMaxPages] = useState(50);
   const [maxDepth, setMaxDepth] = useState(3);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchTasks = async () => {
     try {
       const res = await fetch(`${API_BASE}/crawl/`);
+      if (!res.ok) throw new Error('API Response was not OK');
       const data = await res.json();
       setTasks(data);
+      setError(null);
+      return data.some((t: Task) => t.status === 'pending' || t.status === 'running');
     } catch (e) {
       console.error('Failed to fetch tasks', e);
+      setError('Failed to reach backend API.');
+      return false; 
     }
   };
 
   useEffect(() => {
-    fetchTasks();
-    const interval = setInterval(fetchTasks, 3000);
+    let interval: ReturnType<typeof setInterval>;
+    
+    const poll = async () => {
+      const shouldContinue = await fetchTasks();
+      if (!shouldContinue && interval) {
+        clearInterval(interval);
+      }
+    };
+    
+    poll(); // initial fetch
+    interval = setInterval(poll, 3000);
+    
     return () => clearInterval(interval);
-  }, []);
+  }, [loading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
-      await fetch(`${API_BASE}/crawl/`, {
+      const res = await fetch(`${API_BASE}/crawl/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ start_url: url, max_pages: maxPages, max_depth: maxDepth })
       });
+      if (!res.ok) throw new Error('Failed to start crawl');
       setUrl('');
-      fetchTasks();
+      // fetchTasks will be triggered by [loading] dependency change when we set it to false
     } catch (e) {
       console.error(e);
+      setError('Failed to start new crawl task.');
     }
     setLoading(false);
   };
@@ -59,6 +78,13 @@ function App() {
           <Activity className="w-8 h-8 text-blue-600" />
           <h1 className="text-3xl font-bold">Website Auditor</h1>
         </header>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <strong className="font-bold">Error! </strong>
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
 
         <section className="bg-white p-6 rounded-xl shadow-sm border">
           <h2 className="text-xl font-semibold mb-4">Start New Crawl</h2>
