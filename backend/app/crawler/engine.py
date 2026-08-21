@@ -2,10 +2,9 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 
-from bs4 import BeautifulSoup
-
 from app.core.config import settings
 from app.crawler.client import AsyncCrawlerClient
+from app.crawler.parser import HTMLParser
 from app.crawler.url import (
     URLTracker,
     is_same_domain,
@@ -55,21 +54,6 @@ class CrawlerEngine:
         self._stop_event = asyncio.Event()
         self._processed_count = 0
 
-    def _extract_links(self, html: str, base_url: str) -> set[str]:
-        """
-        Minimal link extraction for internal link discovery.
-        (Will be expanded into a dedicated parser in future milestones).
-        """
-        soup = BeautifulSoup(html, "html.parser")
-        links = set()
-        for a_tag in soup.find_all("a", href=True):
-            href = a_tag["href"]
-            resolved = resolve_url(base_url, href)
-            # Only keep valid, internal links
-            if is_valid_url(resolved) and is_same_domain(self.start_url, resolved):
-                links.add(resolved)
-        return links
-
     async def _worker(self):
         while not self._stop_event.is_set():
             try:
@@ -99,13 +83,13 @@ class CrawlerEngine:
                 else:
                     self.stats.pages_crawled += 1
 
-                    # Discover new links
+                    # Discover new links using the dedicated parser
                     if result.html_content and depth < self.max_depth:
-                        links = self._extract_links(result.html_content, url)
-                        for link in links:
-                            if not self.tracker.is_visited(link):
-                                self.tracker.mark_visited(link)
-                                await self.queue.put((link, depth + 1))
+                        parsed = HTMLParser(result.html_content, url).parse()
+                        for link_info in parsed.links:
+                            if is_same_domain(self.start_url, link_info.href) and not self.tracker.is_visited(link_info.href):
+                                    self.tracker.mark_visited(link_info.href)
+                                    await self.queue.put((link_info.href, depth + 1))
 
                     # Follow internal redirects
                     if result.redirect_url:
