@@ -1,4 +1,4 @@
-# Website Auditor
+# Crawler
 
 A production-quality asynchronous website crawler and SEO auditing platform.
 

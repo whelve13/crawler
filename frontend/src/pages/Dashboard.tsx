@@ -39,9 +39,9 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-300">
-      <header className="flex items-center space-x-3 pb-4 border-b border-gray-200">
-        <Activity className="w-8 h-8 text-blue-600" />
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Website Auditor</h1>
+      <header className="flex items-center space-x-3 pb-4 border-b border-terminal-border">
+        <Activity className="w-8 h-8 text-terminal-accent" />
+        <h1 className="text-3xl font-bold text-terminal-accent tracking-tight">Crawler</h1>
       </header>
 
       {error && (

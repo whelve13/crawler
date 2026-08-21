@@ -49,7 +49,7 @@ def test_default_settings_are_safe():
     """
     from app.core.config import Settings
     s = Settings()
-    assert s.PROJECT_NAME == "Website Auditor"
+    assert s.PROJECT_NAME == "Crawler"
     assert s.MAX_CONCURRENCY > 0
     assert s.MAX_FILE_SIZE_BYTES > 0
     assert s.DB_POOL_SIZE > 0
