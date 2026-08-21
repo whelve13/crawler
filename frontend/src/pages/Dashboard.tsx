@@ -23,17 +23,14 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
+    // Initial load
+    loadTasks();
     
-    const poll = async () => {
-      const shouldContinue = await loadTasks();
-      if (!shouldContinue && interval) {
-        clearInterval(interval);
-      }
-    };
+    // Continuous polling
+    const interval = setInterval(() => {
+      loadTasks();
+    }, 3000);
     
-    poll();
-    interval = setInterval(poll, 3000);
     return () => clearInterval(interval);
   }, []);
 
