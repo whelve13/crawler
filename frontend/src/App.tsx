@@ -1,11 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import CrawlReportPage from './pages/CrawlReport';
 
 function App() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <HashRouter>
         <div className="p-4 sm:p-8">
           <Routes>
             <Route path="/" element={<Dashboard />} />
