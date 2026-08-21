@@ -17,8 +17,7 @@ COPY pyproject.toml README.md ./
 # Install dependencies via uv
 RUN uv pip install --system -e .[dev]
 
-# Copy application code
-COPY ./app /app/app
-COPY ./tests /app/tests
+# Copy the entire backend directory (app, tests, alembic, etc.)
+COPY . /app/
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
