@@ -77,15 +77,22 @@ class AsyncCrawlerClient:
                         
                     # Parse body only for successful HTML responses to save memory
                     content_type = response.headers.get("Content-Type", "")
+                    content_length = response.headers.get("Content-Length")
+                    
                     if response.status_code == 200 and "text/html" in content_type.lower():
-                        content_chunks = []
-                        total_bytes = 0
-                        async for chunk in response.aiter_bytes():
-                            content_chunks.append(chunk)
-                            total_bytes += len(chunk)
-                            if total_bytes > MAX_BYTES:
-                                break
-                        result.html_content = b"".join(content_chunks).decode("utf-8", errors="ignore")
+                        # If the server tells us it's too big upfront, skip downloading
+                        if content_length and int(content_length) > MAX_BYTES:
+                            result.error_type = "ResponseTooLarge"
+                            result.status_code = 413 # Payload Too Large semantic mapped to client side
+                        else:
+                            content_chunks = []
+                            total_bytes = 0
+                            async for chunk in response.aiter_bytes():
+                                content_chunks.append(chunk)
+                                total_bytes += len(chunk)
+                                if total_bytes > MAX_BYTES:
+                                    break
+                            result.html_content = b"".join(content_chunks).decode("utf-8", errors="ignore")
                         
                 # Return on successful fetch or client errors (no retry for 4xx)
                 if result.status_code < 500:
