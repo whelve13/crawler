@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend requirements
-COPY ./backend/pyproject.toml .
+COPY ./backend/pyproject.toml ./backend/README.md ./
 
 # Install dependencies
 RUN pip install --no-cache-dir .
