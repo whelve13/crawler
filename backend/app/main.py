@@ -46,10 +46,11 @@ async def readiness_check():
     Readiness probe to ensure database connectivity.
     """
     try:
-        from app.db.session import engine
         from sqlalchemy import text
+
+        from app.db.session import engine
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
         return {"status": "ready"}
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise HTTPException(status_code=503, detail="Service unavailable")
