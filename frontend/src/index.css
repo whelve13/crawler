@@ -1,56 +1,65 @@
 @import "tailwindcss";
 
 @theme {
-  --color-white: #111111;
-  --color-black: #e5e7eb;
-  --color-gray-50: #000000;
-  --color-gray-100: #111111;
-  --color-gray-200: #333333;
-  --color-gray-300: #444444;
-  --color-gray-400: #666666;
-  --color-gray-500: #888888;
-  --color-gray-600: #999999;
-  --color-gray-700: #cccccc;
-  --color-gray-800: #e5e7eb;
-  --color-gray-900: #ffffff;
-  --color-blue-50: #111111;
-  --color-blue-100: #222222;
-  --color-blue-500: #ffffff;
-  --color-blue-600: #e5e7eb;
-  --color-blue-700: #cccccc;
-  --color-blue-800: #888888;
-  --color-red-50: #220000;
-  --color-red-100: #440000;
-  --color-red-200: #660000;
-  --color-red-300: #880000;
-  --color-red-400: #aa0000;
-  --color-red-500: #cc0000;
-  --color-red-600: #ee0000;
-  --color-red-700: #ff3333;
-  --color-red-800: #ff6666;
-  --color-green-50: #002200;
-  --color-green-100: #004400;
-  --color-green-200: #006600;
-  --color-green-300: #008800;
-  --color-green-400: #00aa00;
-  --color-green-500: #00cc00;
-  --color-green-600: #00ee00;
-  --color-green-700: #33ff33;
-  --color-green-800: #66ff66;
-  --color-yellow-50: #222200;
-  --color-yellow-100: #444400;
-  --color-yellow-200: #666600;
-  --color-yellow-300: #888800;
-  --color-yellow-400: #aaaa00;
-  --color-yellow-500: #cccc00;
-  --color-yellow-600: #eeee00;
-  --color-yellow-700: #ffff33;
-  --color-yellow-800: #ffff66;
-  --color-indigo-50: #111122;
-  --color-indigo-100: #222244;
-  --color-indigo-500: #6666ff;
-  --color-indigo-600: #8888ff;
-  --color-indigo-700: #aaaaff;
+  --color-white: #050505;
+  --color-black: #ffb000;
+  
+  /* Grayscale mapped to Amber intensity */
+  --color-gray-50: #0a0700;
+  --color-gray-100: #140e00;
+  --color-gray-200: #291c00;
+  --color-gray-300: #422d00;
+  --color-gray-400: #664600;
+  --color-gray-500: #8f6200;
+  --color-gray-600: #bd8100;
+  --color-gray-700: #ebaa00;
+  --color-gray-800: #ffb000;
+  --color-gray-900: #ffd666; /* Very bright amber for highlights */
+  
+  /* Re-map all functional colors to Amber intensities to enforce monochrome */
+  --color-blue-50: #0a0700;
+  --color-blue-100: #140e00;
+  --color-blue-500: #8f6200;
+  --color-blue-600: #ffb000;
+  --color-blue-700: #ffd666;
+  --color-blue-800: #ffe699;
+  
+  --color-red-50: #140e00;
+  --color-red-100: #291c00;
+  --color-red-200: #422d00;
+  --color-red-300: #664600;
+  --color-red-400: #8f6200;
+  --color-red-500: #bd8100;
+  --color-red-600: #ffb000;
+  --color-red-700: #ffd666; /* Standout bright amber for errors */
+  --color-red-800: #ffe699;
+  
+  --color-green-50: #0a0700;
+  --color-green-100: #140e00;
+  --color-green-200: #291c00;
+  --color-green-300: #422d00;
+  --color-green-400: #664600;
+  --color-green-500: #bd8100;
+  --color-green-600: #ffb000;
+  --color-green-700: #ffd666;
+  --color-green-800: #ffe699;
+  
+  --color-yellow-50: #0a0700;
+  --color-yellow-100: #140e00;
+  --color-yellow-200: #291c00;
+  --color-yellow-300: #422d00;
+  --color-yellow-400: #664600;
+  --color-yellow-500: #bd8100;
+  --color-yellow-600: #ffb000;
+  --color-yellow-700: #ffd666;
+  --color-yellow-800: #ffe699;
+
+  --color-indigo-50: #0a0700;
+  --color-indigo-100: #140e00;
+  --color-indigo-500: #ffb000;
+  --color-indigo-600: #ffd666;
+  --color-indigo-700: #ffe699;
+
   --font-sans: "Fira Code", "Courier New", Courier, monospace;
   --font-mono: "Fira Code", "Courier New", Courier, monospace;
 }
@@ -58,13 +67,14 @@
 @layer base {
   body {
     background-color: #050505;
-    color: #e5e7eb;
+    color: #ffb000;
     font-family: "Fira Code", "Courier New", Courier, monospace;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
     padding: 0;
     min-height: 100vh;
+    text-shadow: 0 0 5px rgba(255, 176, 0, 0.4); /* CRT Phosphor Glow */
   }
 }
 
@@ -94,12 +104,12 @@ body::before {
 }
 ::-webkit-scrollbar-track {
   background-color: #050505;
-  border-left: 1px solid #333333;
+  border-left: 1px solid #422d00;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #444444;
+  background-color: #664600;
   border: 1px solid #050505;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #666666;
+  background-color: #bd8100;
 }
