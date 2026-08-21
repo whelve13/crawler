@@ -2,22 +2,23 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install build dependencies for some Python packages
-RUN apt-get update && apt-get install -y \
-    build-essential \
+# Install system dependencies for psycopg2 and building
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for fast dependency resolution
-RUN pip install uv
+# Copy backend requirements
+COPY ./backend/pyproject.toml .
 
-# Copy only the files needed for dependency installation
-COPY pyproject.toml README.md ./
+# Install dependencies
+RUN pip install --no-cache-dir .
 
-# Install dependencies via uv
-RUN uv pip install --system -e .[dev]
+# Copy application code
+COPY ./backend /app/
 
-# Copy the entire backend directory (app, tests, alembic, etc.)
-COPY . /app/
+# Expose port
+EXPOSE 8000
 
+# Run Uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
