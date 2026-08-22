@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  Website Auditor & Crawler
+  Website Auditor &amp; Crawler
   <br>
 </h1>
 
@@ -11,7 +11,7 @@
   <a href="#key-features">Features</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#tech-stack">Tech Stack</a> •
-  <a href="#how-it-works">How To Use</a> •
+  <a href="#how-it-works">How It Works</a> •
   <a href="#security">Security</a>
 </p>
 
@@ -29,14 +29,14 @@ The project is currently deployed and accessible live:
 ## Key Features
 
 ### 🕸️ Crawling & Discovery
-- **Asynchronous Engine:** High-performance, highly concurrent crawling powered by Python's syncio and httpx.
+- **Asynchronous Engine:** High-performance, highly concurrent crawling powered by Python's `asyncio` and `httpx`.
 - **Configurable Limits:** Users can enforce strict depth constraints and maximum page bounds to constrain crawl scope.
 - **Link Discovery:** Automatically parses HTML to discover, normalize, and enqueue internal links.
 - **Health Tracking:** Records HTTP status codes, tracks redirection chains/loops, and surfaces broken links.
 
 ### 📈 SEO Analysis
 - **Metadata Extraction:** Extracts and analyzes Title tags, Meta Descriptions, and Canonical URLs.
-- **Content Hierarchy:** Parses <h1>, <h2>, and <h3> tags to evaluate semantic structure.
+- **Content Hierarchy:** Parses `<h1>`, `<h2>`, and `<h3>` tags to evaluate semantic structure.
 - **Automated Rule Evaluation:** Flags common SEO problems (e.g., missing titles, descriptions too short/long, missing H1s).
 
 ### 📊 Interactive Reporting
@@ -51,20 +51,20 @@ The project is currently deployed and accessible live:
 
 ## Architecture
 
-`mermaid
+```mermaid
 flowchart LR
-    Client([Browser / User]) -->|HTTPS| UI[React SPA<br>GitHub Pages]
-    UI -->|REST API| API[FastAPI Backend<br>Render]
-    
+    Client(["Browser / User"]) -->|HTTPS| UI["React SPA — GitHub Pages"]
+    UI -->|REST API| API["FastAPI Backend — Render"]
+
     subgraph Backend Infrastructure
-        API -->|Task Enqueue| Worker[Background Tasks]
-        Worker <--> Engine[Crawler Engine]
-        Engine <--> Internet((Target<br>Website))
-        
-        API <--> DB[(PostgreSQL)]
+        API -->|Task Enqueue| Worker["Background Tasks"]
+        Worker <--> Engine["Crawler Engine"]
+        Engine <--> Internet(("Target Website"))
+
+        API <--> DB[("PostgreSQL")]
         Worker -->|Persist Results| DB
     end
-`
+```
 
 ## Tech Stack
 
@@ -74,10 +74,10 @@ flowchart LR
 | **Styling** | Tailwind CSS | Utility-first styling (Amber CRT Retro Theme) |
 | **Visualizations** | Recharts, react-force-graph-2d | Charting and site architecture mapping |
 | **Backend** | Python 3.12, FastAPI | High-performance asynchronous REST API |
-| **Crawler** | httpx, BeautifulSoup4 | Async network requests and HTML parsing |
+| **Crawler** | `httpx`, `BeautifulSoup4` | Async network requests and HTML parsing |
 | **Database** | PostgreSQL, SQLAlchemy, asyncpg | Relational data persistence and ORM |
 | **Migrations** | Alembic | Database schema versioning |
-| **Testing** | pytest, itest | Automated unit and integration testing |
+| **Testing** | `pytest`, `vitest` | Automated unit and integration testing |
 | **CI/CD** | GitHub Actions | Automated linting (Ruff), testing, and deployment |
 | **Hosting** | Render, GitHub Pages | Containerized backend and static frontend hosting |
 
@@ -85,8 +85,8 @@ flowchart LR
 
 1. **Submission:** The user submits a target URL, max depth, and max pages via the Dashboard.
 2. **Validation:** The backend validates the request payload and applies strict SSRF checks against the target hostname.
-3. **Queueing:** The API returns a 	ask_id immediately and spins up a background worker.
-4. **Crawling:** The CrawlerEngine manages an asynchronous queue, fetching URLs concurrently without exceeding the designated connection pool limits.
+3. **Queueing:** The API returns a `task_id` immediately and spins up a background worker.
+4. **Crawling:** The `CrawlerEngine` manages an asynchronous queue, fetching URLs concurrently without exceeding the designated connection pool limits.
 5. **Parsing & Auditing:** Successful HTML responses are parsed to extract metadata, headers, and internal links. The SEO engine audits the extracted data.
 6. **Persistence:** Crawl metrics, page states, and specific SEO/Health issues are bulk-committed to PostgreSQL.
 7. **Rendering:** The React frontend polls for task completion and retrieves the serialized JSON report to render interactive charts, tables, and force-directed graphs.
@@ -95,19 +95,19 @@ flowchart LR
 
 This repository implements multiple defensive mechanisms to protect the host infrastructure and the public API from abuse:
 
-- **Server-Side Request Forgery (SSRF) Protection:** The is_safe_url utility intercepts all outgoing crawl requests. It performs a DNS resolution and rejects any URL that resolves to a private, loopback, link-local, multicast, or reserved IP address (IPv4 and IPv6). This prevents attackers from crawling the internal network or AWS metadata endpoints.
-- **Resource Exhaustion Limits:** 
-  - MAX_FILE_SIZE_BYTES prevents the crawler from downloading massive files (e.g., ISOs, videos) by checking the Content-Length header upfront and aborting the HTTP stream if the limit is exceeded.
-  - Strict upper bounds on max_pages and max_depth are enforced via Pydantic schema validation.
-- **Rate Limiting:** IP-based rate limiting is enforced via slowapi to prevent API spam (e.g., max 5 crawl requests per minute).
-- **Concurrency Capping:** A global thread-safe CrawlConcurrencyManager rejects new crawl submissions with a 503 Service Unavailable if the server is currently processing its maximum allowed number of concurrent crawls.
+- **Server-Side Request Forgery (SSRF) Protection:** The `is_safe_url` utility intercepts all outgoing crawl requests. It performs a DNS resolution and rejects any URL that resolves to a private, loopback, link-local, multicast, or reserved IP address (IPv4 and IPv6). This prevents attackers from crawling the internal network or AWS metadata endpoints.
+- **Resource Exhaustion Limits:**
+  - `MAX_FILE_SIZE_BYTES` prevents the crawler from downloading massive files (e.g., ISOs, videos) by checking the `Content-Length` header upfront and aborting the HTTP stream if the limit is exceeded.
+  - Strict upper bounds on `max_pages` and `max_depth` are enforced via Pydantic schema validation.
+- **Rate Limiting:** IP-based rate limiting is enforced via `slowapi` to prevent API spam (e.g., max 5 crawl requests per minute).
+- **Concurrency Capping:** A global thread-safe `CrawlConcurrencyManager` rejects new crawl submissions with a `503 Service Unavailable` if the server is currently processing its maximum allowed number of concurrent crawls.
 - **Environment Secrets:** No sensitive credentials or API keys are exposed in the frontend or version control.
 
-> **Note on SSRF TOCTOU:** While the SSRF protection performs upfront DNS resolution and IP validation, a highly sophisticated DNS Rebinding attack (TOCTOU) could theoretically bypass it since the httpx client performs a secondary DNS resolution. Hardening against DNS rebinding would require a custom DNS resolver patched directly into httpx.
+> **Note on SSRF TOCTOU:** While the SSRF protection performs upfront DNS resolution and IP validation, a highly sophisticated DNS Rebinding attack (TOCTOU) could theoretically bypass it since the `httpx` client performs a secondary DNS resolution. Hardening against DNS rebinding would require a custom DNS resolver patched directly into `httpx`.
 
 ## Project Structure
 
-`	ext
+```
 crawler/
 ├── .github/workflows/          # CI/CD pipelines (Lint, Test, Deploy)
 ├── backend/
@@ -131,16 +131,16 @@ crawler/
 │   ├── Dockerfile
 │   └── package.json
 └── docker-compose.yml          # Local full-stack orchestration
-`
+```
 
 ## API Overview
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | /api/v1/crawl/ | Initializes a new crawl task. Requires start_url. Optional: max_pages, max_depth. Returns a 	ask_id. |
-| GET | /api/v1/crawl/ | Returns a list of recently dispatched crawl tasks and their current lifecycle statuses. |
-| GET | /api/v1/crawl/{task_id} | Retrieves the real-time execution status and metrics for a specific task. |
-| GET | /api/v1/crawl/{task_id}/report | Fetches the comprehensive, serialized crawl report including all pages, SEO issues, and health warnings. |
+| `POST` | `/api/v1/crawl/` | Initializes a new crawl task. Requires `start_url`. Optional: `max_pages`, `max_depth`. Returns a `task_id`. |
+| `GET` | `/api/v1/crawl/` | Returns a list of recently dispatched crawl tasks and their current lifecycle statuses. |
+| `GET` | `/api/v1/crawl/{task_id}` | Retrieves the real-time execution status and metrics for a specific task. |
+| `GET` | `/api/v1/crawl/{task_id}/report` | Fetches the comprehensive, serialized crawl report including all pages, SEO issues, and health warnings. |
 
 ## Local Development
 
@@ -154,13 +154,13 @@ The easiest way to run the entire stack locally is by using Docker Compose.
 
 Clone the repository and run Docker Compose from the root directory:
 
-`ash
+```bash
 git clone https://github.com/whelve13/crawler.git
 cd crawler
 
 # This will build the frontend/backend images and start PostgreSQL
 docker-compose up --build
-`
+```
 
 ### 2. Access the Application
 
@@ -168,13 +168,13 @@ docker-compose up --build
 - **Backend API:** http://localhost:8000
 - **API Documentation (Swagger UI):** http://localhost:8000/docs
 
-The docker-compose.yml is configured to automatically run database migrations (lembic upgrade head) before starting the backend API.
+The `docker-compose.yml` is configured to automatically run database migrations (`alembic upgrade head`) before starting the backend API.
 
 ## Environment Variables
 
-For manual deployment or non-Docker local setups, the backend requires a .env file in the ackend/ directory:
+For manual deployment or non-Docker local setups, the backend requires a `.env` file in the `backend/` directory:
 
-`nv
+```env
 # Example backend/.env
 ENVIRONMENT=development
 POSTGRES_SERVER=localhost
@@ -186,14 +186,14 @@ POSTGRES_DB=crawler
 
 # CORS Configuration
 BACKEND_CORS_ORIGINS=["http://localhost:5173"]
-`
+```
 
-The frontend requires environment variables configured at build-time (in .env or injected via CI):
+The frontend requires environment variables configured at build-time (in `.env` or injected via CI):
 
-`nv
+```env
 # Example frontend/.env
 VITE_API_BASE=http://localhost:8000/api/v1
-`
+```
 
 ## License
 
